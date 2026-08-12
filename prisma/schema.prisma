@@ -1,0 +1,146 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String?
+  email     String?  @unique
+  image     String?
+  timezone  String   @default("Asia/Dhaka")
+  weekStart WeekStart @default(MONDAY)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  habits     Habit[]
+  categories Category[]
+  settings   UserSettings?
+
+  @@index([email])
+}
+
+model UserSettings {
+  id                  String          @id @default(cuid())
+  userId              String          @unique
+  theme               ThemePreference @default(SYSTEM)
+  defaultReminders    Boolean         @default(false)
+  completionBehavior  CompletionBehavior @default(TOGGLE)
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  icon      String?
+  color     String?
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  habits Habit[]
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model Habit {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  icon        String   @default("Circle")
+  color       String   @default("sky")
+  frequency   HabitFrequency
+  goalType    GoalType @default(BOOLEAN)
+  targetValue Int      @default(1)
+  unit        String?
+  weekdays    Int[]    @default([])
+  weeklyTarget Int?
+  startDate   DateTime
+  endDate     DateTime?
+  reminderEnabled Boolean @default(false)
+  reminderTime String?  @default("09:00")
+  isActive    Boolean @default(true)
+  isArchived  Boolean @default(false)
+  userId      String
+  categoryId  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  entries  HabitEntry[]
+  notes    HabitNote[]
+
+  @@index([userId])
+  @@index([userId, isActive])
+  @@index([userId, isArchived])
+  @@index([categoryId])
+}
+
+model HabitEntry {
+  id        String   @id @default(cuid())
+  habitId   String
+  date      DateTime
+  completed Boolean  @default(false)
+  value     Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  @@unique([habitId, date])
+  @@index([habitId, date])
+}
+
+model HabitNote {
+  id        String   @id @default(cuid())
+  habitId   String
+  date      DateTime
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  @@index([habitId, date])
+}
+
+enum HabitFrequency {
+  DAILY
+  WEEKDAYS
+  WEEKENDS
+  WEEKLY
+  CUSTOM
+}
+
+enum GoalType {
+  BOOLEAN
+  NUMBER
+  DURATION
+  DISTANCE
+}
+
+enum WeekStart {
+  MONDAY
+  SUNDAY
+}
+
+enum ThemePreference {
+  LIGHT
+  DARK
+  SYSTEM
+}
+
+enum CompletionBehavior {
+  TOGGLE
+  KEEP_ENTRY
+}
