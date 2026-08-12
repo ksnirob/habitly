@@ -159,12 +159,12 @@ export async function getCalendarData(date = new Date()) {
   }
 }
 
-export async function getAnalytics() {
+export async function getAnalytics(date = new Date()) {
   try {
     const dashboard = await getTodayDashboard();
-    const monthStart = startOfMonth(new Date());
-    const previousMonthStart = startOfMonth(subMonths(new Date(), 1));
-    const calendar = await getCalendarData(new Date());
+    const monthStart = startOfMonth(date);
+    const previousMonthStart = startOfMonth(subMonths(date, 1));
+    const calendar = await getCalendarData(date);
     const previousCalendar = await getCalendarData(previousMonthStart);
     const successfulDays = calendar.filter((day) => day.rate === 100 && day.scheduled.length).length;
     const missedDays = calendar.filter((day) => day.rate === 0 && day.scheduled.length).length;
@@ -186,10 +186,11 @@ export async function getAnalytics() {
       longestStreak: longest,
       monthRate: avgMonth,
       monthDelta: avgMonth - avgPrevious,
+      monthDaily: calendar.map((day) => ({ label: day.day.getDate().toString(), rate: day.rate })),
       habits: allRows
     };
   } catch {
-    return getDemoAnalytics();
+    return getDemoAnalytics(date);
   }
 }
 

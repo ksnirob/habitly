@@ -336,10 +336,10 @@ export function getDemoCalendarData(date = new Date()) {
   });
 }
 
-export function getDemoAnalytics() {
+export function getDemoAnalytics(date = now) {
   const dashboard = getDemoTodayDashboard();
-  const calendar = getDemoCalendarData(now);
-  const previousCalendar = getDemoCalendarData(subMonths(now, 1));
+  const calendar = getDemoCalendarData(date);
+  const previousCalendar = getDemoCalendarData(subMonths(date, 1));
   const rows = getDemoHabitRows("all");
   const totalCompletions = rows.reduce(
     (sum, row) => sum + row.habit.entries.filter((entry) => entryMeetsTarget(row.habit, entry)).length,
@@ -350,13 +350,14 @@ export function getDemoAnalytics() {
 
   return {
     ...dashboard,
-    monthStart: startOfMonth(now),
+    monthStart: startOfMonth(date),
     successfulDays: calendar.filter((day) => day.rate === 100 && day.scheduled.length).length,
     missedDays: calendar.filter((day) => day.rate === 0 && day.scheduled.length).length,
     totalCompletions,
     longestStreak: Math.max(0, ...rows.map((row) => longestStreak(row.habit, row.habit.entries, row.habit.startDate, now))),
     monthRate,
     monthDelta: monthRate - previousRate,
+    monthDaily: calendar.map((day) => ({ label: day.day.getDate().toString(), rate: day.rate })),
     habits: rows
   };
 }
