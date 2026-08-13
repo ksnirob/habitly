@@ -36,7 +36,7 @@ export async function createHabit(_: unknown, formData: FormData) {
   try {
     user = await getCurrentUser();
   } catch {
-    return { ok: false, message: "Demo data is read-only until PostgreSQL is connected" };
+    return { ok: false, message: "Please sign in and connect PostgreSQL before creating habits" };
   }
 
   await prisma.habit.create({
@@ -62,7 +62,7 @@ export async function updateHabit(id: string, _: unknown, formData: FormData) {
   try {
     user = await getCurrentUser();
   } catch {
-    return { ok: false, message: "Demo data is read-only until PostgreSQL is connected" };
+    return { ok: false, message: "Please sign in and connect PostgreSQL before editing habits" };
   }
 
   const existing = await prisma.habit.findFirst({ where: { id, userId: user.id } });
@@ -89,7 +89,7 @@ export async function toggleHabitCompletion(habitId: string, value?: number) {
   try {
     user = await getCurrentUser();
   } catch {
-    return { ok: true, message: "Demo habit updated" };
+    return { ok: false, message: "Please sign in before updating habits" };
   }
 
   try {

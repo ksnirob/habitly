@@ -30,6 +30,6 @@ export async function createCategory(_: unknown, formData: FormData) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       return { ok: false, message: "That category already exists" };
     }
-    return { ok: false, message: "Connect PostgreSQL to save new categories" };
+    return { ok: false, message: "Please sign in and connect PostgreSQL before creating categories" };
   }
 }

@@ -1,7 +1,10 @@
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { Sidebar } from "@/components/layout/sidebar";
+import { requireSession } from "@/lib/auth";
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  await requireSession();
+
   return (
     <div className="min-h-screen lg:flex">
       <Sidebar />

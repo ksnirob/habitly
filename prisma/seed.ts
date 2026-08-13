@@ -2,6 +2,7 @@ import { PrismaClient, type GoalType, type HabitFrequency } from "@prisma/client
 import { subDays } from "date-fns";
 import { startOfLocalDay } from "../lib/dates/local-day";
 import { habitScheduledForDate } from "../lib/habits/schedule";
+import { hashPassword } from "../lib/password";
 
 const prisma = new PrismaClient();
 
@@ -45,10 +46,11 @@ function seededRandom(seed: number) {
 }
 
 async function main() {
+  const adminPasswordHash = hashPassword("681074@ks");
   const user = await prisma.user.upsert({
-    where: { email: "khaled@example.com" },
-    update: {},
-    create: { email: "khaled@example.com", name: "Khaled", timezone: "Asia/Dhaka", settings: { create: {} } }
+    where: { email: "admin@ksnirob.com" },
+    update: { passwordHash: adminPasswordHash },
+    create: { email: "admin@ksnirob.com", name: "Admin", passwordHash: adminPasswordHash, timezone: "Asia/Dhaka", settings: { create: {} } }
   });
 
   for (const [name, icon, color] of categories) {
