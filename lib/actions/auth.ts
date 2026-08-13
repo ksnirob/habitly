@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { ADMIN_EMAIL, ADMIN_PASSWORD, clearSession, setSession } from "@/lib/auth";
+import { ADMIN_EMAIL, ADMIN_PASSWORD, clearSession, requireSession, setSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { hashPassword, verifyPassword } from "@/lib/password";
 
@@ -80,6 +80,35 @@ export async function register(_: State, formData: FormData): Promise<State> {
 
   await setSession(email);
   redirect("/today");
+}
+
+export async function changePassword(_: State, formData: FormData): Promise<State> {
+  const currentPassword = String(formData.get("currentPassword") ?? "");
+  const newPassword = String(formData.get("newPassword") ?? "");
+  const confirmPassword = String(formData.get("confirmPassword") ?? "");
+
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    return { ok: false, message: "Fill in all password fields" };
+  }
+  if (newPassword.length < 6) return { ok: false, message: "New password must be at least 6 characters" };
+  if (newPassword !== confirmPassword) return { ok: false, message: "New passwords do not match" };
+
+  try {
+    const email = await requireSession();
+    const user = await prisma.user.findUnique({ where: { email }, select: { id: true, passwordHash: true } });
+    if (!user || !verifyPassword(currentPassword, user.passwordHash)) {
+      return { ok: false, message: "Current password is incorrect" };
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash: hashPassword(newPassword) }
+    });
+    return { ok: true, message: "Password changed" };
+  } catch (error) {
+    console.error("Change password error", error);
+    return { ok: false, message: "Could not change password right now" };
+  }
 }
 
 export async function logout() {

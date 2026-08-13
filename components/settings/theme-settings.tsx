@@ -14,18 +14,21 @@ const themes = [
 export function ThemeSettings() {
   const { theme, setTheme } = useTheme();
   return (
-    <div className="grid gap-3 sm:grid-cols-3">
+    <div className="grid grid-cols-3 gap-1 rounded-lg border bg-background p-1">
       {themes.map(({ value, label, Icon }) => (
         <Button
           key={value}
           type="button"
-          variant="outline"
+          variant="ghost"
           onClick={() => setTheme(value)}
-          className={cn("min-h-20 justify-start p-4", theme === value && "border-primary bg-primary/10")}
+          className={cn(
+            "h-11 min-h-11 rounded-md px-2 text-xs sm:text-sm",
+            theme === value && "bg-primary text-primary-foreground shadow-sm hover:bg-primary hover:text-primary-foreground"
+          )}
           aria-pressed={theme === value}
         >
-          <Icon className="size-5 text-primary" />
-          {label}
+          <Icon className="size-4" />
+          <span>{label}</span>
         </Button>
       ))}
     </div>

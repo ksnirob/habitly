@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Archive, BarChart3, CalendarDays, Folder, Home, ListChecks, Settings, Sparkles, UserCircle } from "lucide-react";
+import { getCurrentUser } from "@/lib/auth";
 
 const primary = [
   { href: "/today", label: "Today", icon: Home },
@@ -13,7 +14,10 @@ const manage = [
   { href: "/archive", label: "Archive", icon: Archive }
 ];
 
-export function Sidebar() {
+export async function Sidebar() {
+  const user = await getCurrentUser();
+  const displayName = user.name ?? user.email?.split("@")[0] ?? "Account";
+
   return (
     <aside className="sticky top-0 hidden h-screen w-64 shrink-0 border-r bg-background/85 px-4 py-5 backdrop-blur lg:flex lg:flex-col">
       <Link href="/today" className="mb-8 flex items-center gap-3 rounded-lg px-2">
@@ -50,8 +54,8 @@ export function Sidebar() {
         <div className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm">
           <UserCircle className="size-8 text-muted-foreground" />
           <span>
-            <span className="block font-medium">Khaled</span>
-            <span className="text-xs text-muted-foreground">Demo workspace</span>
+            <span className="block font-medium">{displayName}</span>
+            <span className="text-xs text-muted-foreground">{user.email}</span>
           </span>
         </div>
       </div>

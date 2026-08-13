@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { NotificationSettings } from "@/components/settings/notification-settings";
 import { ThemeSettings } from "@/components/settings/theme-settings";
+import { ChangePasswordForm } from "@/components/settings/change-password-form";
 import { Button } from "@/components/ui/button";
 import { logout } from "@/lib/actions/auth";
 import { getCurrentUser } from "@/lib/auth";
@@ -24,9 +25,13 @@ export default async function SettingsPage() {
       </Card>
       <Card>
         <CardHeader><CardTitle>Account</CardTitle></CardHeader>
-        <CardContent className="space-y-3 text-sm text-muted-foreground">
-          <p>Signed in as {user.email}.</p>
-          <form action={logout}>
+        <CardContent className="space-y-6">
+          <p className="text-sm text-muted-foreground">Signed in as {user.email}.</p>
+          <div className="rounded-lg border bg-background p-5">
+            <h3 className="mb-5 font-medium">Change password</h3>
+            <ChangePasswordForm />
+          </div>
+          <form action={logout} className="border-t pt-4">
             <Button variant="outline">Sign out</Button>
           </form>
         </CardContent>

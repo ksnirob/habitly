@@ -4,6 +4,8 @@ import { defineConfig } from "prisma/config";
 
 function loadLocalDatabaseUrl() {
   if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
+  if (process.env.POSTGRES_URL) return process.env.POSTGRES_URL;
+  if (process.env.PRISMA_DATABASE_URL) return process.env.PRISMA_DATABASE_URL;
 
   const envFiles = [".env.local", ".env"];
 
@@ -11,9 +13,12 @@ function loadLocalDatabaseUrl() {
     const envPath = resolve(process.cwd(), file);
     if (!existsSync(envPath)) continue;
 
-    const match = readFileSync(envPath, "utf8").match(/^DATABASE_URL=(.+)$/m);
-    const value = match?.[1]?.trim().replace(/^"|"$/g, "");
-    if (value) return value;
+    const content = readFileSync(envPath, "utf8");
+    for (const key of ["DATABASE_URL", "POSTGRES_URL", "PRISMA_DATABASE_URL"]) {
+      const match = content.match(new RegExp(`^${key}=(.+)$`, "m"));
+      const value = match?.[1]?.trim().replace(/^"|"$/g, "");
+      if (value) return value;
+    }
   }
 
   return "";

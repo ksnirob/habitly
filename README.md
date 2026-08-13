@@ -65,6 +65,8 @@ In Vercel, set these Environment Variables for Production and Preview:
 - `DATABASE_URL`: your Prisma Postgres connection string
 - `AUTH_SECRET`: any long random string used to sign login cookies
 
+If the Prisma/Vercel integration created `POSTGRES_URL` or `PRISMA_DATABASE_URL` instead, either copy that same value into `DATABASE_URL` or leave the alias in place. The Prisma config checks all three names.
+
 Set the Vercel Build Command to:
 
 ```bash
@@ -80,6 +82,7 @@ prisma generate && prisma migrate deploy && next build
 If the live login page says the database is not ready, check:
 
 1. `DATABASE_URL` exists in the Vercel project settings.
+   If not, check whether `POSTGRES_URL` or `PRISMA_DATABASE_URL` exists instead.
 2. The variable is available for the environment you deployed, usually Production.
 3. The site was redeployed after adding or changing env vars.
 4. The deployment logs show `prisma migrate deploy` completed.
