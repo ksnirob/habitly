@@ -45,7 +45,7 @@ export async function login(_: State, formData: FormData): Promise<State> {
     }
   } catch (error) {
     console.error("Login database error", error);
-    return { ok: false, message: "Database is not ready. Run Prisma migrate, then restart the app." };
+    return { ok: false, message: "Database is not ready. Check DATABASE_URL and run migrations on Vercel." };
   }
 
   await setSession(email);
@@ -75,7 +75,7 @@ export async function register(_: State, formData: FormData): Promise<State> {
     });
   } catch (error) {
     console.error("Register database error", error);
-    return { ok: false, message: "That account could not be created. Run Prisma migrate, then try again." };
+    return { ok: false, message: "That account could not be created. Check DATABASE_URL and run migrations." };
   }
 
   await setSession(email);

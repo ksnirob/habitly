@@ -58,6 +58,38 @@ npm.cmd run build
 
 Use `db push` only when you do not need migration history. Use `migrate dev` when you want Prisma to create a migration file that can be safely replayed later.
 
+## Vercel Deployment
+
+In Vercel, set these Environment Variables for Production and Preview:
+
+- `DATABASE_URL`: your Prisma Postgres connection string
+- `AUTH_SECRET`: any long random string used to sign login cookies
+
+Set the Vercel Build Command to:
+
+```bash
+npm run vercel-build
+```
+
+That command runs:
+
+```bash
+prisma generate && prisma migrate deploy && next build
+```
+
+If the live login page says the database is not ready, check:
+
+1. `DATABASE_URL` exists in the Vercel project settings.
+2. The variable is available for the environment you deployed, usually Production.
+3. The site was redeployed after adding or changing env vars.
+4. The deployment logs show `prisma migrate deploy` completed.
+
+For the starter admin data, run locally against the same production database:
+
+```powershell
+npx.cmd prisma db seed
+```
+
 ## Scripts
 
 - `npm run dev` starts Next.js
