@@ -27,8 +27,8 @@ export default async function SettingsPage() {
         <CardHeader><CardTitle>Account</CardTitle></CardHeader>
         <CardContent className="space-y-6">
           <p className="text-sm text-muted-foreground">Signed in as {user.email}.</p>
-          <div className="rounded-lg border bg-background p-5">
-            <h3 className="mb-5 font-medium">Change password</h3>
+          <div className="rounded-lg border bg-background p-6">
+            <h3 className="mb-6 font-medium">Change password</h3>
             <ChangePasswordForm />
           </div>
           <form action={logout} className="border-t pt-4">

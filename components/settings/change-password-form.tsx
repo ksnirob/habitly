@@ -11,7 +11,7 @@ export function ChangePasswordForm() {
   const [state, formAction, pending] = useActionState<State, FormData>(changePassword, undefined);
 
   return (
-    <form action={formAction} className="space-y-5">
+    <form action={formAction} className="space-y-4">
       {state?.message && (
         <p className={`rounded-lg border p-3 text-sm ${state.ok ? "border-primary/30 bg-primary/10 text-primary" : "border-destructive/30 bg-destructive/10 text-destructive"}`}>
           {state.message}
@@ -22,7 +22,7 @@ export function ChangePasswordForm() {
         ["newPassword", "New password", "new-password"],
         ["confirmPassword", "Confirm new password", "new-password"]
       ].map(([name, label, autoComplete]) => (
-        <label key={name} className="block space-y-2.5">
+        <label key={name} className="space-y-2">
           <span className="text-sm font-medium">{label}</span>
           <span className="relative block">
             <Lock className="pointer-events-none absolute left-3 top-3 size-5 text-muted-foreground" />
@@ -37,7 +37,7 @@ export function ChangePasswordForm() {
           </span>
         </label>
       ))}
-      <div className="pt-2">
+      <div className="pt-3">
         <Button type="submit" variant="outline" disabled={pending}>{pending ? "Updating..." : "Change password"}</Button>
       </div>
     </form>
