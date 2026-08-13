@@ -24,6 +24,19 @@ function nextMidnightRefresh() {
   return next;
 }
 
+async function showHabitNotification(body: string) {
+  const registration = await navigator.serviceWorker.ready;
+  await registration.showNotification("Habitly", {
+    body,
+    icon: "/icon.svg",
+    badge: "/icon.svg",
+    tag: "habitly-daily-reminder",
+    data: {
+      url: "/today"
+    }
+  });
+}
+
 export function PwaProvider() {
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
@@ -55,11 +68,7 @@ export function PwaProvider() {
 
       timeoutId = window.setTimeout(async () => {
         if (nextReminder) {
-          const registration = await navigator.serviceWorker.ready;
-          registration.active?.postMessage({
-            type: "SHOW_HABIT_REMINDER",
-            body: `Time for ${nextReminder.reminder.name}.`
-          });
+          await showHabitNotification(`Time for ${nextReminder.reminder.name}.`);
         }
         schedule();
       }, next.getTime() - Date.now());

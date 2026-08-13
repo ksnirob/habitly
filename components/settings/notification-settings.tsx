@@ -28,7 +28,7 @@ export function NotificationSettings() {
       return;
     }
 
-    const registration = await navigator.serviceWorker.register("/sw.js");
+    await navigator.serviceWorker.register("/sw.js");
     const permission = await Notification.requestPermission();
     if (permission !== "granted") {
       toast.error("Notifications were not enabled");
@@ -38,11 +38,48 @@ export function NotificationSettings() {
     window.localStorage.setItem("habitly-reminders", "enabled");
     setEnabled(true);
     window.dispatchEvent(new Event("habitly-reminders-change"));
-    registration.active?.postMessage({
-      type: "SHOW_HABIT_REMINDER",
-      body: "Reminders are on. Habitly will nudge you daily."
-    });
-    toast.success("Daily reminders enabled");
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      await registration.showNotification("Habitly", {
+        body: "Reminders are on. Habitly will nudge you daily.",
+        icon: "/icon.svg",
+        badge: "/icon.svg",
+        tag: "habitly-reminders-enabled",
+        data: {
+          url: "/today"
+        }
+      });
+      toast.success("Daily reminders enabled");
+    } catch {
+      toast.error("Notifications are enabled, but the browser blocked the preview");
+    }
+  }
+
+  async function showTestNotification() {
+    if (!supported) {
+      toast.error("Notifications are not supported in this browser");
+      return;
+    }
+    if (Notification.permission !== "granted") {
+      toast.error("Turn on reminders first");
+      return;
+    }
+
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      await registration.showNotification("Habitly", {
+        body: "Notifications are working.",
+        icon: "/icon.svg",
+        badge: "/icon.svg",
+        tag: "habitly-test-notification",
+        data: {
+          url: "/today"
+        }
+      });
+      toast.success("Test notification sent");
+    } catch {
+      toast.error("The browser or OS blocked the notification");
+    }
   }
 
   function disable() {
@@ -65,9 +102,12 @@ export function NotificationSettings() {
           </div>
         </div>
       </div>
-      <Button type="button" variant={enabled ? "outline" : "default"} onClick={enabled ? disable : enable}>
-        {enabled ? "Turn off" : "Enable"}
-      </Button>
+      <div className="flex gap-2">
+        {enabled && <Button type="button" variant="outline" onClick={showTestNotification}>Test</Button>}
+        <Button type="button" variant={enabled ? "outline" : "default"} onClick={enabled ? disable : enable}>
+          {enabled ? "Turn off" : "Enable"}
+        </Button>
+      </div>
     </div>
   );
 }
