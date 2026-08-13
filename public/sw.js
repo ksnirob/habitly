@@ -6,6 +6,10 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(self.clients.claim());
 });
 
+self.addEventListener("fetch", () => {
+  // Required by some browsers when evaluating installability.
+});
+
 self.addEventListener("message", (event) => {
   if (!event.data || event.data.type !== "SHOW_HABIT_REMINDER") return;
 

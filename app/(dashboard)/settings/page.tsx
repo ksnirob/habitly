@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { NotificationSettings } from "@/components/settings/notification-settings";
 import { ThemeSettings } from "@/components/settings/theme-settings";
 import { ChangePasswordForm } from "@/components/settings/change-password-form";
+import { InstallApp } from "@/components/settings/install-app";
 import { Button } from "@/components/ui/button";
 import { logout } from "@/lib/actions/auth";
 import { getCurrentUser } from "@/lib/auth";
@@ -22,6 +23,10 @@ export default async function SettingsPage() {
       <Card>
         <CardHeader><CardTitle>Notifications</CardTitle></CardHeader>
         <CardContent><NotificationSettings /></CardContent>
+      </Card>
+      <Card>
+        <CardHeader><CardTitle>Install app</CardTitle></CardHeader>
+        <CardContent><InstallApp /></CardContent>
       </Card>
       <Card>
         <CardHeader><CardTitle>Account</CardTitle></CardHeader>
