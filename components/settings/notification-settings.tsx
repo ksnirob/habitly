@@ -7,12 +7,20 @@ import { Button } from "@/components/ui/button";
 
 export function NotificationSettings() {
   const [nextReminder, setNextReminder] = useState<string | null>(null);
+  const [pushReady, setPushReady] = useState(false);
   const [enabled, setEnabled] = useState(() =>
     typeof window === "undefined" ? false : window.localStorage.getItem("habitly-reminders") === "enabled"
   );
   const [supported, setSupported] = useState(() =>
-    typeof window === "undefined" ? true : "Notification" in window && "serviceWorker" in navigator
+    typeof window === "undefined" ? true : "Notification" in window && "serviceWorker" in navigator && "PushManager" in window
   );
+
+  function urlBase64ToUint8Array(base64String: string) {
+    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = `${base64String}${padding}`.replace(/-/g, "+").replace(/_/g, "/");
+    const rawData = window.atob(base64);
+    return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
+  }
 
   useEffect(() => {
     async function loadNextReminder() {
@@ -30,11 +38,16 @@ export function NotificationSettings() {
     }
 
     const sync = () => {
-      setSupported("Notification" in window && "serviceWorker" in navigator);
+      setSupported("Notification" in window && "serviceWorker" in navigator && "PushManager" in window);
       setEnabled(window.localStorage.getItem("habitly-reminders") === "enabled");
+      setPushReady(window.localStorage.getItem("habitly-push") === "enabled");
       loadNextReminder();
     };
-    loadNextReminder();
+    sync();
+    navigator.serviceWorker?.ready
+      .then((registration) => registration.pushManager.getSubscription())
+      .then((subscription) => setPushReady(Boolean(subscription)))
+      .catch(() => undefined);
     window.addEventListener("habitly-reminders-change", sync);
     return () => window.removeEventListener("habitly-reminders-change", sync);
   }, []);
@@ -52,56 +65,63 @@ export function NotificationSettings() {
       return;
     }
 
+    const keyResponse = await fetch("/api/push/public-key", { cache: "no-store" });
+    const keyData = (await keyResponse.json()) as { configured?: boolean; publicKey?: string | null };
+    if (!keyData.configured || !keyData.publicKey) {
+      toast.error("Push reminders need VAPID keys on the server");
+      return;
+    }
+
+    const registration = await navigator.serviceWorker.ready;
+    const existing = await registration.pushManager.getSubscription();
+    const subscription =
+      existing ??
+      (await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(keyData.publicKey)
+      }));
+
+    const subscribeResponse = await fetch("/api/push/subscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        subscription,
+        userAgent: navigator.userAgent
+      })
+    });
+
+    if (!subscribeResponse.ok) {
+      toast.error("Could not save this device for reminders");
+      return;
+    }
+
     window.localStorage.setItem("habitly-reminders", "enabled");
+    window.localStorage.setItem("habitly-push", "enabled");
     setEnabled(true);
+    setPushReady(true);
     window.dispatchEvent(new Event("habitly-reminders-change"));
-    try {
-      const registration = await navigator.serviceWorker.ready;
-      await registration.showNotification("Habitly", {
-        body: "Reminders are on. Habitly will nudge you daily.",
-        icon: "/icon.svg",
-        badge: "/icon.svg",
-        tag: "habitly-reminders-enabled",
-        data: {
-          url: "/today"
-        }
-      });
-      toast.success("Daily reminders enabled");
-    } catch {
-      toast.error("Notifications are enabled, but the browser blocked the preview");
-    }
+    toast.success("Habit reminders enabled");
   }
 
-  async function showTestNotification() {
-    if (!supported) {
-      toast.error("Notifications are not supported in this browser");
-      return;
-    }
-    if (Notification.permission !== "granted") {
-      toast.error("Turn on reminders first");
-      return;
-    }
-
+  async function disable() {
     try {
       const registration = await navigator.serviceWorker.ready;
-      await registration.showNotification("Habitly", {
-        body: "Notifications are working.",
-        icon: "/icon.svg",
-        badge: "/icon.svg",
-        tag: "habitly-test-notification",
-        data: {
-          url: "/today"
-        }
-      });
-      toast.success("Test notification sent");
+      const subscription = await registration.pushManager.getSubscription();
+      if (subscription) {
+        await fetch("/api/push/unsubscribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ endpoint: subscription.endpoint })
+        });
+        await subscription.unsubscribe();
+      }
     } catch {
-      toast.error("The browser or OS blocked the notification");
+      // The local toggle should still turn off even if the browser has already removed the subscription.
     }
-  }
-
-  function disable() {
     window.localStorage.removeItem("habitly-reminders");
+    window.localStorage.removeItem("habitly-push");
     setEnabled(false);
+    setPushReady(false);
     window.dispatchEvent(new Event("habitly-reminders-change"));
     toast.success("Daily reminders disabled");
   }
@@ -115,13 +135,16 @@ export function NotificationSettings() {
         <div className="min-w-0">
           <div className="font-medium">Daily habit reminder</div>
           <div className="text-sm text-muted-foreground">
-            {enabled ? "Habitly will use the reminder time set on each habit." : "Enable mobile browser reminders for today's habits."}
+            {enabled
+              ? pushReady
+                ? "Habitly will notify this device even when the app is closed."
+                : "Habitly will use the reminder time set on each habit."
+              : "Enable mobile browser reminders for today's habits."}
           </div>
           {enabled && nextReminder && <div className="mt-1 text-xs text-muted-foreground">Next: {nextReminder}</div>}
         </div>
       </div>
       <div className="flex gap-2">
-        {enabled && <Button type="button" variant="outline" onClick={showTestNotification}>Test</Button>}
         <Button type="button" variant={enabled ? "outline" : "default"} onClick={enabled ? disable : enable}>
           {enabled ? "Turn off" : "Enable"}
         </Button>

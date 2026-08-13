@@ -69,6 +69,7 @@ export function PwaProvider() {
       window.clearTimeout(timeoutId);
       if (!("Notification" in window)) return;
       if (window.localStorage.getItem("habitly-reminders") !== "enabled") return;
+      if (window.localStorage.getItem("habitly-push") === "enabled") return;
       if (Notification.permission !== "granted") return;
 
       let reminders: Reminder[] = [];

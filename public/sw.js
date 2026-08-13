@@ -27,6 +27,30 @@ self.addEventListener("message", (event) => {
   );
 });
 
+self.addEventListener("push", (event) => {
+  const payload = event.data
+    ? event.data.json()
+    : {
+        title: "Habitly",
+        body: "Check in with today's habits.",
+        tag: "habitly-daily-reminder",
+        data: { url: "/today" },
+        actions: []
+      };
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title || "Habitly", {
+      body: payload.body || "Check in with today's habits.",
+      icon: payload.icon || "/icon.svg",
+      badge: payload.badge || "/icon.svg",
+      tag: payload.tag || "habitly-daily-reminder",
+      renotify: true,
+      actions: payload.actions || [],
+      data: payload.data || { url: "/today" }
+    })
+  );
+});
+
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const data = event.notification.data || {};

@@ -110,3 +110,27 @@ The app uses cookie-based authentication and stores user-owned habits in Postgre
 ## PWA
 
 Habitly includes `public/manifest.webmanifest`, `public/sw.js`, and a Settings notification toggle. Mobile notifications require browser support, notification permission, and for iOS usually the installed PWA experience.
+
+Closed-app habit reminders use Web Push. After pulling the code, create the push tables:
+
+```powershell
+npx.cmd prisma migrate dev
+```
+
+Generate VAPID keys:
+
+```powershell
+npx.cmd web-push generate-vapid-keys
+```
+
+Set these env vars locally and in Vercel:
+
+- `VAPID_PUBLIC_KEY`
+- `VAPID_PRIVATE_KEY`
+- `VAPID_SUBJECT`, for example `mailto:admin@ksnirob.com`
+
+Vercel runs `/api/push/send-due` every 5 minutes from `vercel.json`. If you set `CRON_SECRET`, call that route from an external cron with:
+
+```text
+Authorization: Bearer your_secret
+```
