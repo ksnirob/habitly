@@ -19,12 +19,17 @@ function loadLocalDatabaseUrl() {
   return "";
 }
 
+const databaseUrl = loadLocalDatabaseUrl();
+if (databaseUrl && !process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = databaseUrl;
+}
+
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     seed: "tsx prisma/seed.ts"
   },
   datasource: {
-    url: loadLocalDatabaseUrl()
+    url: databaseUrl
   }
 });

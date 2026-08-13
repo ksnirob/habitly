@@ -46,6 +46,7 @@ function seededRandom(seed: number) {
 }
 
 async function main() {
+  console.log("Seeding admin user, categories, habits, and entries...");
   const adminPasswordHash = hashPassword("681074@ks");
   const user = await prisma.user.upsert({
     where: { email: "admin@ksnirob.com" },
@@ -91,6 +92,7 @@ async function main() {
       ? await prisma.habit.update({ where: { id: existing.id }, data })
       : await prisma.habit.create({ data });
 
+    const entries = [];
     for (let offset = 90; offset >= 0; offset -= 1) {
       const date = startOfLocalDay(subDays(new Date(), offset));
       if (!habitScheduledForDate(created, date)) continue;
@@ -98,13 +100,18 @@ async function main() {
       if (roll > habit.probability) continue;
       const partial = roll < 0.12 && habit.goalType !== "BOOLEAN";
       const value = habit.goalType === "BOOLEAN" ? 1 : partial ? Math.floor(habit.targetValue * 0.55) : habit.targetValue + Math.floor(roll * 3);
-      await prisma.habitEntry.upsert({
-        where: { habitId_date: { habitId: created.id, date } },
-        update: { completed: value >= habit.targetValue, value },
-        create: { habitId: created.id, date, completed: value >= habit.targetValue, value }
+      entries.push({ habitId: created.id, date, completed: value >= habit.targetValue, value });
+    }
+
+    if (entries.length) {
+      await prisma.habitEntry.createMany({
+        data: entries,
+        skipDuplicates: true
       });
     }
   }
+
+  console.log("Seed complete.");
 }
 
 main()
