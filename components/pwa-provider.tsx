@@ -6,8 +6,21 @@ type Reminder = {
   id: string;
   habitId: string;
   name: string;
+  goalType: string;
+  targetValue: number;
+  unit: string | null;
   date: string;
   time: string;
+};
+
+type NotificationAction = {
+  action: string;
+  title: string;
+  icon?: string;
+};
+
+type HabitNotificationOptions = NotificationOptions & {
+  actions?: NotificationAction[];
 };
 
 function reminderDateTime(reminder: Reminder) {
@@ -21,17 +34,27 @@ function nextRefresh() {
   return next;
 }
 
-async function showHabitNotification(body: string) {
+function notificationAction(reminder: Reminder) {
+  return reminder.goalType === "BOOLEAN"
+    ? { action: "complete", title: "Complete", icon: "/check.svg" }
+    : { action: "increment", title: `+1 ${reminder.unit ?? ""}`.trim(), icon: "/plus.svg" };
+}
+
+async function showHabitNotification(reminder: Reminder) {
   const registration = await navigator.serviceWorker.ready;
-  await registration.showNotification("Habitly", {
-    body,
+  const options: HabitNotificationOptions = {
+    body: `Time for ${reminder.name}.`,
     icon: "/icon.svg",
     badge: "/icon.svg",
     tag: "habitly-daily-reminder",
+    actions: [notificationAction(reminder)],
     data: {
-      url: "/today"
+      url: "/today",
+      habitId: reminder.habitId,
+      goalType: reminder.goalType
     }
-  });
+  };
+  await registration.showNotification("Habitly", options);
 }
 
 export function PwaProvider() {
@@ -66,7 +89,7 @@ export function PwaProvider() {
 
       timeoutId = window.setTimeout(async () => {
         if (nextReminder) {
-          await showHabitNotification(`Time for ${nextReminder.reminder.name}.`);
+          await showHabitNotification(nextReminder.reminder);
         }
         schedule();
       }, next.getTime() - Date.now());

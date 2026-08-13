@@ -29,11 +29,37 @@ self.addEventListener("message", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
+  const data = event.notification.data || {};
+
+  if ((event.action === "complete" || event.action === "increment") && data.habitId) {
+    event.waitUntil(
+      fetch(`/api/habits/${data.habitId}/complete`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ mode: event.action })
+      })
+        .then(() => self.registration.showNotification("Habitly", {
+          body: event.action === "increment" ? "Progress added." : "Habit completed.",
+          icon: "/icon.svg",
+          badge: "/icon.svg",
+          tag: "habitly-action-confirmed",
+          data: {
+            url: "/today"
+          }
+        }))
+        .catch(() => self.clients.openWindow(data.url || "/today"))
+    );
+    return;
+  }
+
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
       const existing = clients.find((client) => "focus" in client);
       if (existing) return existing.focus();
-      return self.clients.openWindow(event.notification.data?.url || "/today");
+      return self.clients.openWindow(data.url || "/today");
     })
   );
 });

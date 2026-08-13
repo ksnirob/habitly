@@ -8,6 +8,9 @@ export const dynamic = "force-dynamic";
 type ReminderHabit = {
   id: string;
   name: string;
+  goalType?: string;
+  targetValue?: number;
+  unit?: string | null;
   reminderEnabled?: boolean;
   reminderTime?: string | null;
 };
@@ -29,6 +32,9 @@ export async function GET() {
           id: `${habit.id}-${dayKey(dashboard.date)}`,
           habitId: habit.id,
           name: habit.name,
+          goalType: habit.goalType ?? "BOOLEAN",
+          targetValue: habit.targetValue ?? 1,
+          unit: habit.unit ?? null,
           date: dayKey(dashboard.date),
           time: habit.reminderTime ?? "09:00"
         }))
