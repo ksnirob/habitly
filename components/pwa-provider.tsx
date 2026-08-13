@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 
 type Reminder = {
   id: string;
@@ -28,11 +29,7 @@ function reminderDateTime(reminder: Reminder) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function nextRefresh() {
-  const next = new Date();
-  next.setMinutes(next.getMinutes() + 15, 0, 0);
-  return next;
-}
+const maxScheduleDelay = 15 * 60 * 1000;
 
 function notificationAction(reminder: Reminder) {
   return reminder.goalType === "BOOLEAN"
@@ -58,6 +55,8 @@ async function showHabitNotification(reminder: Reminder) {
 }
 
 export function PwaProvider() {
+  const pathname = usePathname();
+
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
     navigator.serviceWorker.register("/sw.js").catch(() => undefined);
@@ -85,23 +84,33 @@ export function PwaProvider() {
         .filter((item): item is { reminder: Reminder; date: Date } => Boolean(item.date))
         .filter((item) => item.date.getTime() > Date.now())
         .sort((a, b) => a.date.getTime() - b.date.getTime())[0];
-      const next = nextReminder?.date ?? nextRefresh();
+      const delay = nextReminder ? Math.max(0, nextReminder.date.getTime() - Date.now()) : maxScheduleDelay;
+      const timeoutDelay = Math.min(delay, maxScheduleDelay);
 
       timeoutId = window.setTimeout(async () => {
-        if (nextReminder) {
+        if (nextReminder && timeoutDelay === delay) {
           await showHabitNotification(nextReminder.reminder);
         }
         schedule();
-      }, next.getTime() - Date.now());
+      }, timeoutDelay);
     };
 
     schedule();
+    const scheduleOnVisible = () => {
+      if (document.visibilityState === "visible") schedule();
+    };
     window.addEventListener("habitly-reminders-change", schedule);
+    window.addEventListener("focus", schedule);
+    window.addEventListener("online", schedule);
+    document.addEventListener("visibilitychange", scheduleOnVisible);
     return () => {
       window.clearTimeout(timeoutId);
       window.removeEventListener("habitly-reminders-change", schedule);
+      window.removeEventListener("focus", schedule);
+      window.removeEventListener("online", schedule);
+      document.removeEventListener("visibilitychange", scheduleOnVisible);
     };
-  }, []);
+  }, [pathname]);
 
   return null;
 }
