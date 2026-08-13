@@ -7,6 +7,16 @@ import { hashPassword, verifyPassword } from "@/lib/password";
 
 type State = { ok: boolean; message?: string } | undefined;
 
+async function findUserForLogin(email: string) {
+  try {
+    return await prisma.user.findUnique({ where: { email } });
+  } catch (error) {
+    console.error("Login database lookup failed, retrying once", error);
+    await new Promise((resolve) => setTimeout(resolve, 750));
+    return prisma.user.findUnique({ where: { email } });
+  }
+}
+
 export async function login(_: State, formData: FormData): Promise<State> {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
@@ -16,7 +26,7 @@ export async function login(_: State, formData: FormData): Promise<State> {
   }
 
   try {
-    let user = await prisma.user.findUnique({ where: { email } });
+    let user = await findUserForLogin(email);
 
     if (!user && email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
       user = await prisma.user.create({
