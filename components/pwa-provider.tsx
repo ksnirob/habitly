@@ -4,23 +4,20 @@ import { useEffect } from "react";
 
 type Reminder = {
   id: string;
+  habitId: string;
   name: string;
+  date: string;
   time: string;
 };
 
-function nextReminderTime(time: string) {
-  const [hours, minutes] = time.split(":").map(Number);
-  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
-
-  const next = new Date();
-  next.setHours(hours, minutes, 0, 0);
-  return next > new Date() ? next : null;
+function reminderDateTime(reminder: Reminder) {
+  const date = new Date(`${reminder.date}T${reminder.time}:00`);
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function nextMidnightRefresh() {
+function nextRefresh() {
   const next = new Date();
-  next.setDate(next.getDate() + 1);
-  next.setHours(0, 1, 0, 0);
+  next.setMinutes(next.getMinutes() + 15, 0, 0);
   return next;
 }
 
@@ -61,10 +58,11 @@ export function PwaProvider() {
       }
 
       const nextReminder = reminders
-        .map((reminder) => ({ reminder, date: nextReminderTime(reminder.time) }))
+        .map((reminder) => ({ reminder, date: reminderDateTime(reminder) }))
         .filter((item): item is { reminder: Reminder; date: Date } => Boolean(item.date))
+        .filter((item) => item.date.getTime() > Date.now())
         .sort((a, b) => a.date.getTime() - b.date.getTime())[0];
-      const next = nextReminder?.date ?? nextMidnightRefresh();
+      const next = nextReminder?.date ?? nextRefresh();
 
       timeoutId = window.setTimeout(async () => {
         if (nextReminder) {

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
 export function NotificationSettings() {
+  const [nextReminder, setNextReminder] = useState<string | null>(null);
   const [enabled, setEnabled] = useState(() =>
     typeof window === "undefined" ? false : window.localStorage.getItem("habitly-reminders") === "enabled"
   );
@@ -14,10 +15,26 @@ export function NotificationSettings() {
   );
 
   useEffect(() => {
+    async function loadNextReminder() {
+      try {
+        const response = await fetch("/api/reminders", { cache: "no-store" });
+        const reminders: { name: string; date: string; time: string }[] = (await response.json()).reminders ?? [];
+        const next = reminders
+          .map((reminder) => ({ reminder, date: new Date(`${reminder.date}T${reminder.time}:00`) }))
+          .filter((item) => !Number.isNaN(item.date.getTime()) && item.date.getTime() > Date.now())
+          .sort((a, b) => a.date.getTime() - b.date.getTime())[0];
+        setNextReminder(next ? `${next.reminder.name} at ${next.date.toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}` : null);
+      } catch {
+        setNextReminder(null);
+      }
+    }
+
     const sync = () => {
       setSupported("Notification" in window && "serviceWorker" in navigator);
       setEnabled(window.localStorage.getItem("habitly-reminders") === "enabled");
+      loadNextReminder();
     };
+    loadNextReminder();
     window.addEventListener("habitly-reminders-change", sync);
     return () => window.removeEventListener("habitly-reminders-change", sync);
   }, []);
@@ -100,6 +117,7 @@ export function NotificationSettings() {
           <div className="text-sm text-muted-foreground">
             {enabled ? "Habitly will use the reminder time set on each habit." : "Enable mobile browser reminders for today's habits."}
           </div>
+          {enabled && nextReminder && <div className="mt-1 text-xs text-muted-foreground">Next: {nextReminder}</div>}
         </div>
       </div>
       <div className="flex gap-2">

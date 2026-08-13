@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { addDays } from "date-fns";
+import { dayKey } from "@/lib/dates/local-day";
 import { getTodayDashboard } from "@/lib/queries/habits";
 
 export const dynamic = "force-dynamic";
@@ -15,17 +17,23 @@ function isReminderHabit(habit: unknown): habit is ReminderHabit {
 }
 
 export async function GET() {
-  const dashboard = await getTodayDashboard();
-  const reminders = dashboard.habits
-    .filter((row) => !row.completed && isReminderHabit(row.habit))
-    .map((row) => row.habit)
-    .filter((habit) => habit.reminderEnabled && habit.reminderTime)
-    .map((habit) => ({
-      id: habit.id,
-      name: habit.name,
-      time: habit.reminderTime ?? "09:00"
-    }))
-    .sort((a, b) => a.time.localeCompare(b.time));
+  const dates = [new Date(), addDays(new Date(), 1)];
+  const dashboards = await Promise.all(dates.map((date) => getTodayDashboard(date)));
+  const reminders = dashboards
+    .flatMap((dashboard) =>
+      dashboard.habits
+        .filter((row) => !row.completed && isReminderHabit(row.habit))
+        .map((row) => row.habit)
+        .filter((habit) => habit.reminderEnabled && habit.reminderTime)
+        .map((habit) => ({
+          id: `${habit.id}-${dayKey(dashboard.date)}`,
+          habitId: habit.id,
+          name: habit.name,
+          date: dayKey(dashboard.date),
+          time: habit.reminderTime ?? "09:00"
+        }))
+    )
+    .sort((a, b) => `${a.date}T${a.time}`.localeCompare(`${b.date}T${b.time}`));
 
   return NextResponse.json({ reminders });
 }
