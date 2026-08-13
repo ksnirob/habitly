@@ -52,6 +52,11 @@ async function main() {
     update: { passwordHash: adminPasswordHash },
     create: { email: "admin@ksnirob.com", name: "Admin", passwordHash: adminPasswordHash, timezone: "Asia/Dhaka", settings: { create: {} } }
   });
+  await prisma.userSettings.upsert({
+    where: { userId: user.id },
+    update: {},
+    create: { userId: user.id }
+  });
 
   for (const [name, icon, color] of categories) {
     await prisma.category.upsert({
@@ -66,8 +71,8 @@ async function main() {
   const startDate = startOfLocalDay(subDays(new Date(), 90));
 
   for (const [index, habit] of habits.entries()) {
-    const created = await prisma.habit.create({
-      data: {
+    const existing = await prisma.habit.findFirst({ where: { userId: user.id, name: habit.name } });
+    const data = {
         name: habit.name,
         icon: habit.icon,
         color: byName.get(habit.category)?.color ?? "sky",
@@ -81,8 +86,10 @@ async function main() {
         startDate,
         reminderEnabled: habit.reminderEnabled ?? false,
         reminderTime: habit.reminderEnabled ? habit.reminderTime ?? "09:00" : null
-      }
-    });
+    };
+    const created = existing
+      ? await prisma.habit.update({ where: { id: existing.id }, data })
+      : await prisma.habit.create({ data });
 
     for (let offset = 90; offset >= 0; offset -= 1) {
       const date = startOfLocalDay(subDays(new Date(), offset));
@@ -91,8 +98,10 @@ async function main() {
       if (roll > habit.probability) continue;
       const partial = roll < 0.12 && habit.goalType !== "BOOLEAN";
       const value = habit.goalType === "BOOLEAN" ? 1 : partial ? Math.floor(habit.targetValue * 0.55) : habit.targetValue + Math.floor(roll * 3);
-      await prisma.habitEntry.create({
-        data: { habitId: created.id, date, completed: value >= habit.targetValue, value }
+      await prisma.habitEntry.upsert({
+        where: { habitId_date: { habitId: created.id, date } },
+        update: { completed: value >= habit.targetValue, value },
+        create: { habitId: created.id, date, completed: value >= habit.targetValue, value }
       });
     }
   }
