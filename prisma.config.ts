@@ -5,11 +5,18 @@ import { defineConfig } from "prisma/config";
 function loadLocalDatabaseUrl() {
   if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
 
-  const envLocal = resolve(process.cwd(), ".env.local");
-  if (!existsSync(envLocal)) return "";
+  const envFiles = [".env.local", ".env"];
 
-  const match = readFileSync(envLocal, "utf8").match(/^DATABASE_URL=(.+)$/m);
-  return match?.[1]?.replace(/^"|"$/g, "") ?? "";
+  for (const file of envFiles) {
+    const envPath = resolve(process.cwd(), file);
+    if (!existsSync(envPath)) continue;
+
+    const match = readFileSync(envPath, "utf8").match(/^DATABASE_URL=(.+)$/m);
+    const value = match?.[1]?.trim().replace(/^"|"$/g, "");
+    if (value) return value;
+  }
+
+  return "";
 }
 
 export default defineConfig({
